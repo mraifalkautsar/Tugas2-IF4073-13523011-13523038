@@ -1,0 +1,44 @@
+dataset/
+out/
+*.asv
+*.autosave
+*** Add File: README.md
+# Tugas 2 IF4073 — Pemrosesan Citra dalam Ranah Frekuensi
+
+Scaffold aplikasi MATLAB berbasis **satu GUI** untuk bagian B–F tugas. Saat ini GUI dapat memuat citra dan menampilkan spektrum masukan, tetapi **belum mengimplementasikan penapisan atau restorasi**. Semua panel keluaran masih placeholder; parameter dapat diedit untuk merancang alur GUI.
+
+## Dependensi
+
+- MATLAB R2022a atau lebih baru (GUI programatik `uifigure`, `uigridlayout`, `uiaxes`).
+- Image Processing Toolbox (`imshow`; diperbolehkan dalam spesifikasi tugas).
+
+## Menjalankan
+
+Jadikan folder repositori ini sebagai *Current Folder* MATLAB, kemudian jalankan:
+
+```matlab
+startup
+app = FrequencyProcessingApp;
+```
+
+GUI tetap dapat dibuka tanpa data uji. Gunakan **Buka File...** untuk memilih citra grayscale/RGB, atau letakkan data resmi dalam `dataset/` dengan folder `B_smoothing_blurring_frequency/`, `C_high_pass_filtering_frequency/`, `D_brightness_frequency/`, `E_periodic_noise_restoration/`, dan `F_motion_blur_restoration/`, masing-masing berisi subfolder `input/` dan (jika tersedia) `reference/`. Tombol **Pilih Folder Dataset...** dapat memilih lokasi dataset lain. Daftar input hanya mencakup berkas citra langsung di subfolder `input/`; referensi tidak diproses sebagai input. Referensi bisa dibuka terpisah dari file melalui GUI.
+
+```matlab
+startup
+results = runtests('tests');
+table(results)
+```
+
+## Struktur
+
+| Lokasi | Tujuan |
+|---|---|
+| `gui/` | GUI tunggal, panel parameter, dan indeks data uji |
+| `src/frequency/` | Analisis spektrum dan kelak mask LPF/HPF/kecerahan |
+| `src/restoration/` | Tempat implementasi derau periodik dan motion blur berikutnya |
+| `src/utils/` | Tempat utilitas citra berikutnya |
+| `tests/` | Tes utilitas dasar dan indeks data |
+| `scripts/` | Tempat skrip pengujian seluruh input berikutnya |
+| `legacy/` | Proyek Tugas 1 sebagai referensi; tidak dimuat pada path |
+
+Tahap berikutnya: bentuk mask/fungsi degradasi sendiri, hubungkan parameter GUI ke metode, lalu tampilkan mask/PSF, spektrum setelah penapisan, hasil, serta perbandingan inverse–Wiener. Jangan gunakan `imgaussfilt`, `imsharpen`, `deconvwnr`, `wiener2`, `imfilter`, atau `fspecial` sebagai implementasi utama metode yang diminta.
