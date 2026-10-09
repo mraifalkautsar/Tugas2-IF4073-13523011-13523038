@@ -1,7 +1,6 @@
 function app = FrequencyProcessingApp()
-%FREQUENCYPROCESSINGAPP Single-GUI scaffold for IF4073 Tugas 2 (B--F).
-% Processing is intentionally NOT implemented. Only input visualization
-% and a diagnostic centered magnitude spectrum are available.
+%FREQUENCYPROCESSINGAPP Single GUI for IF4073 Tugas 2 (B--F).
+% Sections B/C run frequency-domain filters; D--F remain placeholders.
 root = fileparts(fileparts(mfilename('fullpath')));
 addpath(fullfile(root, 'src', 'frequency'));
 datasetRoot = fullfile(root, 'dataset');
@@ -10,8 +9,9 @@ inputImage = [];
 referenceImage = [];
 parameterFields = struct();
 paramGrid = [];
+orderLabel = [];
 
-app = uifigure('Name', 'IF4073 Tugas 2 - Ranah Frekuensi (Scaffold)', ...
+app = uifigure('Name', 'IF4073 Tugas 2 - Ranah Frekuensi', ...
     'Position', [90 60 1320 780], 'Visible', 'off');
 main = uigridlayout(app, [1 2]);
 main.ColumnWidth = {340, '1x'};
@@ -30,7 +30,7 @@ sectionBox = uidropdown(controls, 'Items', { ...
     'D - Peningkatan kecerahan', 'E - Derau periodik', ...
     'F - Motion blur'}, 'ItemsData', {'B', 'C', 'D', 'E', 'F'}, ...
     'Value', 'B', 'ValueChangedFcn', @(~, ~) sectionChanged());
-datasetButton = uibutton(controls, 'Text', 'Pilih Folder Dataset...', ...
+uibutton(controls, 'Text', 'Pilih Folder Dataset...', ...
     'ButtonPushedFcn', @(~, ~) chooseDataset());
 uilabel(controls, 'Text', 'Input pada bagian terpilih', 'FontWeight', 'bold');
 imageList = uilistbox(controls, 'Items', {'(dataset belum tersedia)'}, ...
@@ -46,14 +46,14 @@ uibutton(fileButtons, 'Text', 'Buka File...', ...
 
 uibutton(controls, 'Text', 'Buka Referensi... (opsional)', ...
     'ButtonPushedFcn', @(~, ~) openImage(true));
-uilabel(controls, 'Text', 'Parameter (belum terhubung ke metode)', ...
+uilabel(controls, 'Text', 'Parameter metode', ...
     'FontWeight', 'bold');
 parameterPanel = uipanel(controls, 'Title', 'Parameter bagian B');
-processButton = uibutton(controls, 'Text', 'Proses - belum diimplementasikan', ...
-    'Enable', 'off', 'Tooltip', 'Metode B-F belum diimplementasikan');
+processButton = uibutton(controls, 'Text', 'Terapkan filter', ...
+    'Enable', 'off', 'ButtonPushedFcn', @(~, ~) processImage());
 status = uitextarea(controls, 'Editable', 'off', 'Value', { ...
-    'Scaffold: buka citra untuk melihat spektrum masukan.', ...
-    'Mask, restorasi, dan keluaran belum tersedia.'});
+    'Pilih citra, jenis penapis, dan parameter.', ...
+    'Bagian D-F belum diimplementasikan.'});
 
 right = uigridlayout(main, [3 2]);
 right.RowHeight = {'1x', '1x', '1x'};
@@ -80,6 +80,7 @@ app.Visible = 'on';
     function sectionChanged()
         inputImage = [];
         referenceImage = [];
+        processButton.Enable = 'off';
         section = sectionBox.Value;
         sectionNumber = double(section) - double('A');
         paths = index(sectionNumber).input;
@@ -98,6 +99,10 @@ app.Visible = 'on';
             titles = {'Citra terdegradasi', 'Spektrum sebelum', ...
                 'PSF / fungsi degradasi', 'Referensi (opsional)', ...
                 'Inverse filtering (belum ada)', 'Wiener filtering (belum ada)'};
+        elseif any(section == 'BC')
+            titles = {'Citra masukan', 'Spektrum sebelum (log)', ...
+                'Fungsi penapis H(u,v)', 'Spektrum setelah (log)', ...
+                'Citra hasil', 'Referensi (opsional)'};
         else
             titles = {'Citra input / terdegradasi', 'Spektrum sebelum', ...
                 'Mask / transfer H(u,v) (belum ada)', 'Spektrum setelah (belum ada)', ...
@@ -107,8 +112,13 @@ app.Visible = 'on';
             panels(j).Title = titles{j};
             showPlaceholder(axesHandles(j), 'Belum tersedia');
         end
+        if any(section == 'BC')
+            note = 'Muat citra, lalu tekan Terapkan filter.';
+        else
+            note = 'Metode bagian ini belum diimplementasikan.';
+        end
         status.Value = {sprintf('Bagian %s: %d citra input ditemukan.', ...
-            section, numel(paths)), 'Pilih input; metode pemrosesan belum dibuat.'};
+            section, numel(paths)), note};
     end
 
     function buildParameters(section)
@@ -123,11 +133,27 @@ app.Visible = 'on';
             case 'B'
                 addChoice('Low-pass', {'Ideal', 'Gaussian', 'Butterworth'});
                 addNumber('Cutoff D0', 30);
-                addNumber('Order (Butterworth)', 2);
+                orderLabel = addNumber('Order (Butterworth)', 2);
+                parameterFields.field2.Limits = [eps Inf];
+                parameterFields.field2.Tooltip = 'Cutoff radius in frequency bins';
+                parameterFields.field3.Limits = [1 Inf];
+                parameterFields.field3.RoundFractionalValues = true;
+                parameterFields.field1.ValueChangedFcn = @(~, ~) filterChanged();
+                parameterFields.field2.ValueChangedFcn = @(~, ~) parametersChanged();
+                parameterFields.field3.ValueChangedFcn = @(~, ~) parametersChanged();
+                updateOrderField();
             case 'C'
                 addChoice('High-pass', {'Ideal', 'Gaussian', 'Butterworth'});
                 addNumber('Cutoff D0', 30);
-                addNumber('Order (Butterworth)', 2);
+                orderLabel = addNumber('Order (Butterworth)', 2);
+                parameterFields.field2.Limits = [eps Inf];
+                parameterFields.field2.Tooltip = 'Cutoff radius in frequency bins';
+                parameterFields.field3.Limits = [1 Inf];
+                parameterFields.field3.RoundFractionalValues = true;
+                parameterFields.field1.ValueChangedFcn = @(~, ~) filterChanged();
+                parameterFields.field2.ValueChangedFcn = @(~, ~) parametersChanged();
+                parameterFields.field3.ValueChangedFcn = @(~, ~) parametersChanged();
+                updateOrderField();
             case 'D'
                 addChoice('Strategi', {'Penguatan frekuensi rendah'});
                 addNumber('Gain DC / rendah', 1.5);
@@ -146,6 +172,30 @@ app.Visible = 'on';
                 addNumber('Batas inverse', 0.01);
                 addNumber('Wiener K / NSR', 0.01);
         end
+        usedRows = numel(fieldnames(parameterFields));
+        paramGrid.RowHeight = [repmat({28}, 1, usedRows), ...
+            repmat({'fit'}, 1, 7 - usedRows)];
+    end
+
+    function updateOrderField()
+        isButterworth = strcmp(parameterFields.field1.Value, 'Butterworth');
+        orderLabel.Visible = isButterworth;
+        parameterFields.field3.Visible = isButterworth;
+    end
+
+    function filterChanged()
+        updateOrderField();
+        parametersChanged();
+    end
+
+    function parametersChanged()
+        for j = 3:5
+            showPlaceholder(axesHandles(j), 'Terapkan filter untuk melihat hasil');
+        end
+        panels(5).Title = 'Citra hasil';
+        if ~isempty(inputImage)
+            status.Value = {'Parameter berubah.', 'Tekan Terapkan filter untuk memperbarui hasil.'};
+        end
     end
 
     function addChoice(label, items)
@@ -159,7 +209,7 @@ app.Visible = 'on';
         parameterFields.(sprintf('field%d', row)) = field;
     end
 
-    function addNumber(label, value)
+    function lbl = addNumber(label, value)
         row = numel(fieldnames(parameterFields)) + 1;
         lbl = uilabel(paramGrid, 'Text', label);
         lbl.Layout.Row = row;
@@ -226,8 +276,9 @@ app.Visible = 'on';
             if ~(ismatrix(img) || (ndims(img) == 3 && size(img, 3) == 3))
                 error('Hanya citra grayscale atau RGB yang didukung.');
             end
-            spectrum = magnitudeSpectrum(img);
+            spectrum = magnitudeSpectrum(im2double(img));
             inputImage = img;
+            panels(5).Title = 'Citra hasil';
             showImage(axesHandles(1), inputImage);
             imagesc(axesHandles(2), spectrum);
             axis(axesHandles(2), 'image');
@@ -244,12 +295,51 @@ app.Visible = 'on';
                     showImage(axesHandles(6), referenceImage);
                 end
             end
+            if any(sectionBox.Value == 'BC')
+                processButton.Enable = 'on';
+            end
             [~, name, ext] = fileparts(path);
             status.Value = {sprintf('Input: %s%s (%d x %d x %d)', name, ext, ...
                 size(img, 1), size(img, 2), size(img, 3)), ...
-                'Spektrum input ditampilkan; pemrosesan belum diimplementasikan.'};
+                'Spektrum input ditampilkan; pilih filter dan tekan Terapkan.'};
         catch ex
             uialert(app, ex.message, 'Gagal membaca input');
+        end
+    end
+
+    function processImage()
+        if isempty(inputImage) || ~any(sectionBox.Value == 'BC'), return; end
+        family = parameterFields.field1.Value;
+        cutoff = parameterFields.field2.Value;
+        order = parameterFields.field3.Value;
+        pass = 'low';
+        if strcmp(sectionBox.Value, 'C'), pass = 'high'; end
+        try
+            [result, H, before, after] = radialFilter(inputImage, ...
+                pass, family, cutoff, order);
+            showMatrix(axesHandles(2), before);
+            showMatrix(axesHandles(3), H, [0 1]);
+            scale = max(1, max(before(:)));
+            showMatrix(axesHandles(4), after, [0 scale]);
+            if strcmp(pass, 'high')
+                % The true result has negative values and zero mean; a fixed
+                % midpoint (gray = 0 response) shows both edge polarities.
+                displayImage = min(max(result + 0.5, 0), 1);
+                panels(5).Title = 'Citra hasil (+0.5 untuk tampilan)';
+                note = 'HPF mentah bertanda; abu-abu 50% = respons nol.';
+            else
+                displayImage = min(max(result, 0), 1);
+                panels(5).Title = 'Citra hasil (nilai asli, dipotong saat tampil)';
+                note = 'Nilai di luar [0,1] hanya dipotong saat tampil.';
+            end
+            showImage(axesHandles(5), displayImage);
+            param = sprintf('%s %s | D0 = %g', family, upper(pass), cutoff);
+            if strcmp(family, 'Butterworth')
+                param = sprintf('%s | orde = %g', param, order);
+            end
+            status.Value = {param, note, 'FFT tanpa padding (batas periodik).'};
+        catch ex
+            uialert(app, ex.message, 'Filter gagal');
         end
     end
 end
@@ -269,4 +359,14 @@ cla(ax);
 axis(ax, 'off');
 text(ax, 0.5, 0.5, message, 'Units', 'normalized', ...
     'HorizontalAlignment', 'center', 'Color', [0.45 0.45 0.45]);
+end
+
+function showMatrix(ax, data, limits)
+cla(ax);
+imagesc(ax, data);
+axis(ax, 'image');
+colormap(ax, gray(256));
+if nargin == 3, caxis(ax, limits); end
+ax.XTick = [];
+ax.YTick = [];
 end
