@@ -67,15 +67,41 @@ for k = 1:6
     panels(k) = uipanel(right, 'Title', '');
     panels(k).Layout.Row = ceil(k / 2);
     panels(k).Layout.Column = mod(k - 1, 2) + 1;
-    cellGrid = uigridlayout(panels(k), [1 1]);
+    cellGrid = uigridlayout(panels(k), [2 1]);
+    cellGrid.RowHeight = {'1x', 26};
     cellGrid.Padding = [2 2 2 2];
     axesHandles(k) = uiaxes(cellGrid);
     axesHandles(k).XTick = [];
     axesHandles(k).YTick = [];
+    axesHandles(k).UserData = uibutton(cellGrid, 'Text', 'Layar penuh', ...
+        'Enable', 'off', 'ButtonPushedFcn', @(~, ~) openFullScreen(k));
 end
 
 sectionChanged();
 app.Visible = 'on';
+
+    function openFullScreen(k)
+        source = axesHandles(k);
+        content = findobj(source, 'Type', 'image');
+        if isempty(content), return; end
+        viewer = uifigure('Name', panels(k).Title, 'Tag', 'FullScreenView', ...
+            'Visible', 'off', ...
+            'KeyPressFcn', @closeOnEscape);
+        layout = uigridlayout(viewer, [2 1]);
+        layout.RowHeight = {28, '1x'};
+        uibutton(layout, 'Text', 'Tutup (Esc)', ...
+            'ButtonPushedFcn', @(~, ~) delete(viewer));
+        enlarged = uiaxes(layout);
+        copyobj(content, enlarged);
+        colormap(enlarged, colormap(source));
+        enlarged.YDir = source.YDir;
+        axis(enlarged, 'image');
+        axis(enlarged, 'off');
+        enlarged.CLim = source.CLim;
+        viewer.Visible = 'on';
+        drawnow;
+        viewer.WindowState = 'fullscreen';
+    end
 
     function sectionChanged()
         inputImage = [];
@@ -280,11 +306,7 @@ app.Visible = 'on';
             inputImage = img;
             panels(5).Title = 'Citra hasil';
             showImage(axesHandles(1), inputImage);
-            imagesc(axesHandles(2), spectrum);
-            axis(axesHandles(2), 'image');
-            colormap(axesHandles(2), gray(256));
-            axesHandles(2).XTick = [];
-            axesHandles(2).YTick = [];
+            showMatrix(axesHandles(2), spectrum);
             for j = 3:6
                 showPlaceholder(axesHandles(j), 'Belum tersedia');
             end
@@ -352,10 +374,12 @@ end
 function showImage(ax, img)
 cla(ax);
 imshow(img, 'Parent', ax);
+ax.UserData.Enable = 'on';
 end
 
 function showPlaceholder(ax, message)
 cla(ax);
+ax.UserData.Enable = 'off';
 axis(ax, 'off');
 text(ax, 0.5, 0.5, message, 'Units', 'normalized', ...
     'HorizontalAlignment', 'center', 'Color', [0.45 0.45 0.45]);
@@ -369,4 +393,9 @@ colormap(ax, gray(256));
 if nargin == 3, caxis(ax, limits); end
 ax.XTick = [];
 ax.YTick = [];
+ax.UserData.Enable = 'on';
+end
+
+function closeOnEscape(viewer, event)
+if strcmp(event.Key, 'escape'), delete(viewer); end
 end
