@@ -3,6 +3,7 @@ function app = FrequencyProcessingApp()
 % Sections B/C run frequency-domain filters; D--F remain placeholders.
 root = fileparts(fileparts(mfilename('fullpath')));
 addpath(fullfile(root, 'src', 'frequency'));
+addpath(fullfile(root, 'src', 'restoration'));
 datasetRoot = fullfile(root, 'dataset');
 index = datasetIndex(datasetRoot);
 inputImage = [];
