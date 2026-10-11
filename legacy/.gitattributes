@@ -1,5 +1,0 @@
-.gitattributes text eol=lf
-*.m    text eol=lf
-*.md   text eol=lf
-*.png  binary
-*.pdf  binary
