@@ -142,7 +142,7 @@ app.Visible = 'on';
             panels(j).Title = titles{j};
             showPlaceholder(axesHandles(j), 'Belum tersedia');
         end
-        if any(section == 'BCEF')
+        if any(section == 'BCEFD')
             note = 'Muat citra, lalu tekan Terapkan filter.';
         else
             note = 'Metode bagian ini belum diimplementasikan.';
@@ -185,9 +185,10 @@ app.Visible = 'on';
                 parameterFields.field3.ValueChangedFcn = @(~, ~) parametersChanged();
                 updateOrderField();
             case 'D'
-                addChoice('Strategi', {'Penguatan frekuensi rendah'});
-                addNumber('Gain DC / rendah', 1.5);
-                addNumber('Cutoff D0', 30);
+                addNumber('Brightness (DC)', 0.15);
+
+                parameterFields.field1.ValueChangedFcn = ...
+                    @(~, ~) parametersChanged();
             case 'E'
                 addChoice('Penapis', {'Bandreject Ideal', ...
                     'Bandreject Butterworth', ...
@@ -357,7 +358,7 @@ app.Visible = 'on';
                     showImage(axesHandles(6), referenceImage);
                 end
             end
-            if ismember(sectionBox.Value, {'B', 'C', 'F', 'E'})
+            if ismember(sectionBox.Value, {'B', 'C', 'F', 'E', 'D'})
                 processButton.Enable = 'on';
             end
             [~, name, ext] = fileparts(path);
@@ -370,7 +371,7 @@ app.Visible = 'on';
     end
 
     function processImage()
-        if isempty(inputImage) || ~any(sectionBox.Value == 'BCFE'), return; end
+        if isempty(inputImage) || ~any(sectionBox.Value == 'BCFED'), return; end
         section = sectionBox.Value;
         try
     
@@ -522,6 +523,38 @@ app.Visible = 'on';
                     ['Filter: ' method], ...
                     'Frequency-domain filtering selesai.'};
 
+
+            elseif strcmp(section, 'D')
+
+                brightness = parameterFields.field1.Value;
+
+                result = BrightnessFrequency(inputImage, brightness);
+
+                before = magnitudeSpectrum(im2double(inputImage));
+                after = magnitudeSpectrum(im2double(result));
+
+                [M, N, ~] = size(inputImage);
+
+                dcChange = zeros(M, N);
+
+                dcRow = floor(M/2) + 1;
+                dcCol = floor(N/2) + 1;
+
+                dcChange(dcRow, dcCol) = brightness;
+                showMatrix(axesHandles(2), before);
+                showMatrix(axesHandles(3), dcChange);
+                showMatrix(axesHandles(4), after);
+                showImage(axesHandles(5), result);
+
+                panels(5).Title = 'Brightness Enhancement';
+
+                if ~isempty(referenceImage)
+                    showImage(axesHandles(6), referenceImage);
+                end
+
+                status.Value = { ...
+                    sprintf('Brightness DC = %.3f', brightness), ...
+                    'Frequency-domain brightness enhancement selesai.'};
             end
 
     
