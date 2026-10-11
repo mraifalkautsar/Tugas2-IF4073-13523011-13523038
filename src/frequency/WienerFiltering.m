@@ -2,7 +2,7 @@
 function enhanced = WienerFiltering(imageArray, L, A, K)
 %WIENERFILTERING Summary of this function goes here
 %   Detailed explanation goes here
-image = double(imageArray);
+image = im2double(imageArray);
 
 [M, N, channels] = size(image);
 

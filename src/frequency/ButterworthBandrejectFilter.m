@@ -1,7 +1,7 @@
-function enhanced = ButterworthBandrejectFilter(imageArray, D0, W, n)
+function [enhanced, H] = ButterworthBandrejectFilter(imageArray, D0, W, n)
 %BUTTERWORTHBANDREJECTFILTER Summary of this function goes here
 %   Detailed explanation goes here
-    image = double(imageArray);
+    image = im2double(imageArray);
 
     [M, N, channels] = size(image);
     u = -floor(N/2):ceil(N/2)-1;

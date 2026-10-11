@@ -1,7 +1,7 @@
 function frequency = DFT2(imageArray, inverse)
 %DFT2 Summary of this function goes here
 %   Detailed explanation goes here
-    image = double(imageArray);
+    image = im2double(imageArray);
     [M, N] = size(image);
 
     sign = -1;

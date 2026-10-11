@@ -1,4 +1,4 @@
-function enhanced = NotchFilter(imageArray, u0, v0, D0)
+function [enhanced,H] = NotchFilter(imageArray, u0, v0, D0)
 %NOTCHFILTER Summary of this function goes here
 %   Detailed explanation goes here
     image = im2double(imageArray);

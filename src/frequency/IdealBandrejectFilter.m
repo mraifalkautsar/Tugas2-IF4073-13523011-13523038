@@ -1,8 +1,8 @@
 
-function enhanced = IdealBandrejectFilter(imageArray, D0, W)
+function [enhanced,H] = IdealBandrejectFilter(imageArray, D0, W)
 %IDEALBANDREJECTFILTER Summary of this function goes here
 %   Detailed explanation goes here
-image = double(imageArray);
+image = im2double(imageArray);
 
 [M, N, channels] = size(image);
 

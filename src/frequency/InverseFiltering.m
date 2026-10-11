@@ -1,7 +1,7 @@
 function enhanced = InverseFiltering(imageArray, L, A, threshold)
 %INVERSEFILTERING Summary of this function goes here
 %   Detailed explanation goes here
-image = double(imageArray);
+image = im2double(imageArray);
 
 [M, N, channels] = size(image);
 
